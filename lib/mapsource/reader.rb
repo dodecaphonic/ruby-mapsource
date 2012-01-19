@@ -1,3 +1,5 @@
+require 'stringio'
+
 module MapSource
   class InvalidFormatError < StandardError; end
   class UnsupportedVersionError < StandardError; end
@@ -10,15 +12,38 @@ module MapSource
 
   # Public: A Waypoint.
   class Waypoint
-    attr_reader :shortname, :latitude, :longitude, :altitude, :notes
+    attr_accessor :shortname, :latitude, :longitude, :altitude, :temperature, :depth, :notes, :creation_time, :proximity
 
-    def initialize(shortname, latitude, longitude, altitude, proximity, notes)
-      @shortname = shortname
+    def initialize(latitude, longitude)
       @latitude = latitude
       @longitude = longitude
-      @altitude = altitude
-      @proximity = proximity
-      @notes = notes
+    end
+  end
+
+  # Public: A Track.
+  class Track
+    attr_reader :name, :color
+
+    def initialize(name, color)
+      @name = name
+      @color = color
+      @waypoints = []
+    end
+
+    def waypoints
+      @waypoints.dup
+    end
+
+    def add_waypoint(wpt)
+      @waypoints << wpt
+    end
+
+    def size
+      @waypoints.size
+    end
+
+    def each
+      @waypoints.each { |wpt| yield wpt if block_given? }
     end
   end
 
@@ -50,8 +75,12 @@ module MapSource
     # Returns a list of waypoints.
     def waypoints
       read_data
-
       @waypoints
+    end
+
+    def tracks
+      read_data
+      @tracks
     end
 
     private
@@ -72,6 +101,8 @@ module MapSource
         case record
         when /^W/
           @waypoints << read_waypoint(record)
+        when /^T/
+          @tracks << read_track(record)
         when /^V/
           break
         else
@@ -81,6 +112,11 @@ module MapSource
       @parsed = true
     end
 
+    # Internal: Converts coordinates in semicircles to degrees.
+    #
+    # v - coordinate as semicircle
+    #
+    # Returns coordinate in degrees.
     def semicircle_to_degrees(v)
       (v.to_f / (1 << 31)) * 180.0
     end
@@ -93,7 +129,54 @@ module MapSource
     def read_waypoint(record)
       _, shortname, wptclass, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, lat, lon, alt, notes, prox = record.unpack('AZ*lZ*aaaaaaaaaaaaaaaaaaaaaallEZ*E')
 
-      Waypoint.new shortname, semicircle_to_degrees(lat), semicircle_to_degrees(lon), alt, prox, notes
+      wpt = Waypoint.new(semicircle_to_degrees(lat), semicircle_to_degrees(lon))
+      wpt.shortname = shortname
+      wpt.altitude = alt
+      wpt.proximity = prox
+      wpt.notes = notes
+
+      wpt
+    end
+
+    def read_track(record)
+      header = record.unpack('AZ*all')
+      _, name, _, color, npoints = *header
+      contents = record.sub(/^#{Regexp.quote(header.pack('AZ*all'))}/, '')
+
+      track = Track.new(name, Color::from_index(color))
+      io = StringIO.new(contents)
+
+      0.upto(npoints - 1) do
+        lat = semicircle_to_degrees(read_int(io))
+        lon = semicircle_to_degrees(read_int(io))
+
+        wpt = Waypoint.new(lat, lon)
+
+        if read_char(io) == 1
+          alt = read_double(io)
+          wpt.altitude = alt if alt < 1.0e24
+        end
+
+        wpt.creation_time = read_int(io) if read_char(io) == 1
+        wpt.depth = read_double(io) if read_char(io) == 1
+        wpt.temperature = read_double(io) if read_char(io) == 1
+
+        track.add_waypoint wpt
+      end
+
+      track
+    end
+
+    def read_int(io)
+      io.read(4).unpack('l').shift
+    end
+
+    def read_double(io)
+      io.read(8).unpack('E').shift
+    end
+
+    def read_char(io)
+      io.read(1).unpack('c').shift
     end
 
     # Internal: Reads a GDB's header to determine the version being parsed, its creator

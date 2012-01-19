@@ -94,6 +94,33 @@ describe MapSource::Reader do
       wpt.longitude.must_equal -44.836323726922274
       wpt.notes.must_equal "@15-DEZ-11 12:06:43PM"
     end
+
+    it "parses tracks" do
+      track = open(SAMPLE_TRACK, 'rb').read
+      gdb_file, seq = *create_basic_valid_state
+      gdb_file.expects(:read).in_sequence(seq).with(4).returns "\xC0r\x00\x00"
+      gdb_file.expects(:read).in_sequence(seq).with(29377).returns track
+      gdb_file.expects(:read).in_sequence(seq).with(4).returns "\x01\x00\x00\x00"
+      gdb_file.expects(:read).in_sequence(seq).with(2).returns "V\x00"
+
+      reader = MapSource::Reader.new(gdb_file)
+      reader.tracks.size.must_equal 1
+
+      track = reader.tracks.first
+      track.name.must_equal "ACTIVE LOG"
+      track.color.name.must_equal "Red"
+      track.size.must_equal 1223
+
+      wpt = track.waypoints.first
+      wpt.latitude.must_be_close_to -22.17333
+      wpt.longitude.must_be_close_to -42.41256
+      wpt.altitude.must_be_close_to 675.0, 0.5
+
+      wpt = track.waypoints[1]
+      wpt.latitude.must_be_close_to -22.17332
+      wpt.longitude.must_be_close_to -42.41264
+      wpt.altitude.must_be_close_to 673.0, 0.5
+    end
   end
 end
 

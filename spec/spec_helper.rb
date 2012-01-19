@@ -47,6 +47,8 @@ module MapSource::Spec
 
     [gdb_file, header]
   end
+
+  SAMPLE_TRACK = File.dirname(__FILE__) + '/assets/track.bin'
 end
 
 include MapSource::Spec
