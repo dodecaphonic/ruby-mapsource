@@ -1,19 +1,43 @@
-require 'ostruct'
-
 module MapSource
   class InvalidFormatError < StandardError; end
   class UnsupportedVersionError < StandardError; end
 
+  # Public: GDB header. Contains name of creator software, signature and
+  # format version.
   class Header
     attr_accessor :created_by, :signed_by, :version
   end
 
+  # Public: A Waypoint.
+  class Waypoint
+    attr_reader :shortname, :latitude, :longitude, :altitude, :notes
+
+    def initialize(shortname, latitude, longitude, altitude, proximity, notes)
+      @shortname = shortname
+      @latitude = latitude
+      @longitude = longitude
+      @altitude = altitude
+      @proximity = proximity
+      @notes = notes
+    end
+  end
+
+  # Public: Parses GDB files and extracts waypoints, tracks and routes.
+  #
+  # Examples:
+  #
+  #   reader = MapSource::Reader.new(open('around_the_world.gdb'))
+  #   reader.waypoints
+  #   # => [MapSource::Waypoint<...>, ...]
   class Reader
+    # Public: Range of format versions supported.
     SUPPORTED_VERSIONS = (1..3)
 
     attr_reader :header, :waypoints
 
-    # TODO: determine who should close this IO object
+    # Public: Creates a Reader.
+    #
+    # gdb - An IO object pointing to a GDB.
     def initialize(gdb)
       @gdb = gdb
       @header = read_header
@@ -21,19 +45,22 @@ module MapSource
       @parsed = false
     end
 
+    # Public: Read waypoints from file.
+    #
+    # Returns a list of waypoints.
     def waypoints
-      read_data unless @parsed
+      read_data
 
       @waypoints
     end
 
     private
-    # Private: After read_header, receives the IO object set at the point where data
-    # can be read. It determines per record what should be parsed and returns the
-    # right structures.
+    # Internal: Reads data from the GDB file.
     #
     # Returns list of waypoints, list of tracks, list of routes.
     def read_data
+      return if @parsed
+
       @waypoints = []
       @tracks = []
       @routes = []
@@ -58,26 +85,24 @@ module MapSource
       (v.to_f / (1 << 31)) * 180.0
     end
 
-    # Private: Reads a waypoint record from the GDB.
+    # Internal: Reads a waypoint record from the GDB.
+    #
+    # record - a binary string containing waypoint data.
     #
     # Returns waypoint.
     def read_waypoint(record)
-      waypoint = OpenStruct.new
       _, shortname, wptclass, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, lat, lon, alt, notes, prox = record.unpack('AZ*lZ*aaaaaaaaaaaaaaaaaaaaaallEZ*E')
-      waypoint.shortname = shortname
-      waypoint.latitude = semicircle_to_degrees(lat)
-      waypoint.longitude = semicircle_to_degrees(lon)
-      waypoint.altitude = alt if alt < 1.0e24
-      waypoint.proximity = prox
-      waypoint.notes = notes
 
-      waypoint
+      Waypoint.new shortname, semicircle_to_degrees(lat), semicircle_to_degrees(lon), alt, prox, notes
     end
 
-    # Private: Reads a GDB's header to determine the version being parsed, its creator
+    # Internal: Reads a GDB's header to determine the version being parsed, its creator
     # and signer.
     #
     # Returns a properly filled header.
+    # Raises MapSource::InvalidFormatError if it's not a GDB file.
+    # Raises MapSource::InvalidFormatError if GDB is malformed.
+    # Raises MapSource::UnsupportedVersionError if file format version is not supported.
     def read_header
       header = Header.new
 
