@@ -42,6 +42,13 @@ describe MapSource::Reader do
       }.must_raise MapSource::UnsupportedVersionError
     end
 
+    it "determines which version of the format it has" do
+      gdb_file, _ = *create_basic_valid_state
+
+      reader = MapSource::Reader.new(gdb_file)
+      reader.header.version.must_equal 3
+    end
+
     it "determines which software created the file" do
       gdb_file, _ = *create_basic_valid_state
 
@@ -66,6 +73,26 @@ describe MapSource::Reader do
       lambda {
         MapSource::Reader.new gdb_file
       }.must_raise MapSource::InvalidFormatError
+    end
+  end
+
+  describe "when reading the content" do
+    it "parses waypoints" do
+      gdb_file, seq = *create_basic_valid_state
+
+      gdb_file.expects(:read).in_sequence(seq).with(4).returns "\l\x00\x00\x00"
+      gdb_file.expects(:read).in_sequence(seq).with(109).returns "W001\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x00\x00\xFF\xFF\xFF\xFF\xE7\xB7\x85\xEF\xDE\xCB\x1D\xE0\x01\x00\x00\x00\x80\xF9X\x97@15-DEZ-11 12:06:43PM\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x8D\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+      gdb_file.expects(:read).in_sequence(seq).with(4).returns "\x01\x00\x00\x00"
+      gdb_file.expects(:read).in_sequence(seq).with(2).returns "V\x00"
+
+      reader = MapSource::Reader.new(gdb_file)
+
+      reader.waypoints.size.must_equal 1
+      wpt = reader.waypoints.first
+      wpt.shortname.must_equal "001"
+      wpt.latitude.must_equal -23.17171306349337
+      wpt.longitude.must_equal -44.836323726922274
+      wpt.notes.must_equal "@15-DEZ-11 12:06:43PM"
     end
   end
 end

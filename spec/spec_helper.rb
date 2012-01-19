@@ -9,7 +9,7 @@ require 'mapsource'
 module MapSource::Spec
   def create_basic_valid_state(options={ before: nil })
     gdb_file = mock('gdb')
-    header = sequence('header')
+    header = sequence('parsing')
 
     unless options[:before] == :start
       gdb_file.expects(:read).in_sequence(header).with(6).returns "MsRcf\x00"
