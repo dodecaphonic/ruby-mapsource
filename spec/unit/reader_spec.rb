@@ -90,9 +90,10 @@ describe MapSource::Reader do
       reader.waypoints.size.must_equal 1
       wpt = reader.waypoints.first
       wpt.shortname.must_equal "001"
-      wpt.latitude.must_equal -23.17171306349337
-      wpt.longitude.must_equal -44.836323726922274
-      wpt.notes.must_equal "@15-DEZ-11 12:06:43PM"
+      wpt.latitude.must_be_close_to -23.17171306349337
+      wpt.longitude.must_be_close_to -44.836323726922274
+      wpt.notes.must_equal "15-DEZ-11 12:06:43PM"
+      wpt.altitude.floor.must_be_close_to 1494
     end
 
     it "parses tracks" do

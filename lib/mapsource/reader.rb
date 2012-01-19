@@ -12,7 +12,7 @@ module MapSource
 
   # Public: A Waypoint.
   class Waypoint
-    attr_accessor :shortname, :latitude, :longitude, :altitude, :temperature, :depth, :notes, :creation_time, :proximity
+    attr_accessor :shortname, :latitude, :longitude, :altitude, :temperature, :depth, :notes, :creation_time, :proximity, :icon, :city, :state, :facility
 
     def initialize(latitude, longitude)
       @latitude = latitude
@@ -127,13 +127,39 @@ module MapSource
     #
     # Returns waypoint.
     def read_waypoint(record)
-      _, shortname, wptclass, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, lat, lon, alt, notes, prox = record.unpack('AZ*lZ*aaaaaaaaaaaaaaaaaaaaaallEZ*E')
+      io = StringIO.new(record)
 
-      wpt = Waypoint.new(semicircle_to_degrees(lat), semicircle_to_degrees(lon))
+      read_char io
+      shortname = read_string(io)
+      wptclass = read_int(io)
+
+      read_string(io)
+      io.read 22 # skip 22 bytes
+
+      lat = semicircle_to_degrees(read_int(io))
+      lon = semicircle_to_degrees(read_int(io))
+
+      wpt = Waypoint.new(lat, lon)
       wpt.shortname = shortname
-      wpt.altitude = alt
-      wpt.proximity = prox
-      wpt.notes = notes
+
+      if read_char(io) == 1
+        alt = read_double(io)
+
+        wpt.altitude = alt if alt < 1.0e24
+      end
+
+      wpt.notes = read_string(io)
+      wpt.proximity = read_double(io) if read_char(io) == 1
+
+      read_int io # display
+      read_int io # color, not implemented
+
+      wpt.icon = read_int(io)
+      wpt.city = read_string(io)
+      wpt.state = read_string(io)
+      wpt.facility = read_string(io)
+
+      wpt.depth = read_double(io) if read_char(io) == 1
 
       wpt
     end
@@ -165,6 +191,17 @@ module MapSource
       end
 
       track
+    end
+
+    def read_string(io)
+      str = ''
+
+      while c = io.read(1)
+        break if c == "\x00"
+        str += c
+      end
+
+      str
     end
 
     def read_int(io)
