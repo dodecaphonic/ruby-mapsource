@@ -7,6 +7,18 @@ require 'mocha'
 require 'mapsource'
 
 module MapSource::Spec
+  # Internal: Creates a basic mock object containing expectations for a part of
+  # (or all of) the header. How much is created is determined by the _options_
+  # hash.
+  #
+  # options - a hash of options. Currently supports ":before" and the following
+  #   states:
+  #     - :start - before expecting on the first string in the file
+  #     - :version - before expectations regarding the version
+  #     - :creator - before expectations regarding the creator of the file
+  #     - :signer - before expectations regarding the signer of the file
+  #
+  # Returns an array with a mocha mock object and a mocha sequence object.
   def create_basic_valid_state(options={ before: nil })
     gdb_file = mock('gdb')
     header = sequence('parsing')
