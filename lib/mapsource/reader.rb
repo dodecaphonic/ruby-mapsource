@@ -148,25 +148,51 @@ module MapSource
       track
     end
 
-    def read_string(io)
-      str = ''
+    # Internal: Reads a string from an IO object.
+    #
+    # io - an IO object
+    # chars - number of chars to read. If not specified, read_string stops at
+    #   the null string terminator.
+    #
+    # Returns a string.
+    def read_string(io, chars=nil)
+      if chars
+        io.read chars
+      else
+        str = ''
+        while c = io.read(1)
+          break if c == "\x00"
+          str += c
+        end
 
-      while c = io.read(1)
-        break if c == "\x00"
-        str += c
+        str
       end
-
-      str
     end
 
+    # Internal: Reads an Integer from an IO object, unpacking it appropriately.
+    #
+    # io - an IO object.
+    #
+    # Returns an Integer.
     def read_int(io)
       io.read(4).unpack('l').shift
     end
 
+    # Internal: Reads a Double from an IO object, unpacking it appropriately.
+    #
+    # io - an IO object.
+    #
+    # Returns an Double.
     def read_double(io)
       io.read(8).unpack('E').shift
     end
 
+    # Internal: Reads a single character from an IO object, unpacking it
+    # appropriately.
+    #
+    # io - an IO object.
+    #
+    # Returns a single character.
     def read_char(io)
       io.read(1).unpack('c').shift
     end
