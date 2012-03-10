@@ -27,7 +27,7 @@ module MapSource
 
     # Public: Read waypoints from file.
     #
-    # Returns a list of waypoints.
+    # Returns an Array of waypoints.
     def waypoints
       read_data
       @waypoints
@@ -39,15 +39,14 @@ module MapSource
     end
 
     private
-    # Internal: Reads data from the GDB file.
+    # Reads data from the GDB file and sets Reader's internal state.
     #
-    # Returns list of waypoints, list of tracks, list of routes.
+    # Returns nothing.
     def read_data
       return if @parsed
 
       @waypoints = []
       @tracks = []
-      @routes = []
 
       while true
         len = @gdb.read(4).unpack('l').shift
@@ -67,7 +66,7 @@ module MapSource
       @parsed = true
     end
 
-    # Internal: Converts coordinates in semicircles to degrees.
+    # Converts coordinates in semicircles to degrees.
     #
     # v - coordinate as semicircle
     #
@@ -76,7 +75,7 @@ module MapSource
       (v.to_f / (1 << 31)) * 180.0
     end
 
-    # Internal: Reads a waypoint record from the GDB.
+    # Reads a waypoint record from the GDB.
     #
     # record - a binary string containing waypoint data.
     #
@@ -148,7 +147,7 @@ module MapSource
       track
     end
 
-    # Internal: Reads a string from an IO object.
+    # Reads a string from an IO object.
     #
     # io - an IO object
     # chars - number of chars to read. If not specified, read_string stops at
@@ -169,7 +168,7 @@ module MapSource
       end
     end
 
-    # Internal: Reads an Integer from an IO object, unpacking it appropriately.
+    # Reads an Integer from an IO object, unpacking it appropriately.
     #
     # io - an IO object.
     #
@@ -178,7 +177,7 @@ module MapSource
       io.read(4).unpack('l').shift
     end
 
-    # Internal: Reads a Double from an IO object, unpacking it appropriately.
+    # Reads a Double from an IO object, unpacking it appropriately.
     #
     # io - an IO object.
     #
@@ -187,8 +186,8 @@ module MapSource
       io.read(8).unpack('E').shift
     end
 
-    # Internal: Reads a single character from an IO object, unpacking it
-    # appropriately.
+    # Reads a single character from an IO object, unpacking it
+    #   appropriately.
     #
     # io - an IO object.
     #
@@ -197,8 +196,8 @@ module MapSource
       io.read(1).unpack('c').shift
     end
 
-    # Internal: Reads a GDB's header to determine the version being parsed, its creator
-    # and signer.
+    # Reads a GDB's header to determine the version being parsed, its creator
+    #   and signer.
     #
     # Returns a properly filled header.
     # Raises MapSource::InvalidFormatError if it's not a GDB file.
