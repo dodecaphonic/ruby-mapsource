@@ -28,3 +28,9 @@ require 'stringio'
 require 'mapsource/structure'
 require 'mapsource/defs'
 require 'mapsource/reader'
+
+module MapSource
+  def self.read(path)
+    MapSource::Reader.new open(path)
+  end
+end

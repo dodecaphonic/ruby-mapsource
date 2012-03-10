@@ -1,8 +1,10 @@
 require 'spec_helper'
 
 describe MapSource::Reader do
+  let(:filename) { File.dirname(__FILE__) + '/../assets/sample.gdb' }
+
   before :each do
-    @gdb_file = open(File.dirname(__FILE__) + '/../assets/sample.gdb')
+    @gdb_file = open(filename)
     @reader = MapSource::Reader.new(@gdb_file)
   end
 
@@ -29,5 +31,14 @@ describe MapSource::Reader do
     wpt.latitude.must_be_close_to -23.17172
     wpt.longitude.must_be_close_to -44.83632
     wpt.altitude.must_be_close_to 1471, 0.05
+  end
+
+  describe 'can be started with a convenience method' do
+    it 'reads the file' do
+      gdb = MapSource.read(filename)
+
+      gdb.waypoints.size.must_equal 312
+      gdb.tracks.find { |t| t.name == 'ACTIVE LOG 009' }.size.must_equal 296
+    end
   end
 end
