@@ -33,6 +33,9 @@ module MapSource
       @waypoints
     end
 
+    # Public: Reads tracks from file.
+    #
+    # Returns an Array of tracks.
     def tracks
       read_data
       @tracks
@@ -96,14 +99,14 @@ module MapSource
       wpt = Waypoint.new(lat, lon)
       wpt.shortname = shortname
 
-      if read_char(io) == 1
+      if read_boolean(io)
         alt = read_double(io)
 
         wpt.altitude = alt if alt < 1.0e24
       end
 
       wpt.notes = read_string(io)
-      wpt.proximity = read_double(io) if read_char(io) == 1
+      wpt.proximity = read_double(io) if read_boolean(io)
 
       read_int io # display
       read_int io # color, not implemented
@@ -113,7 +116,47 @@ module MapSource
       wpt.state = read_string(io)
       wpt.facility = read_string(io)
 
-      wpt.depth = read_double(io) if read_char(io) == 1
+      read_meaningless_chars io, 1
+
+      wpt.depth = read_double(io) if read_boolean(io)
+
+      if header.version <= 2
+        read_meaningless_chars 2
+        wptflag = read_boolean(io)
+
+        read_meaningless_chars (waypt_flag ? 2 : 3)
+        read_string io # undocumented and unused string
+
+        wpt.add_url read_string(io)
+        if wptclass != 0
+          # It's a description, not an URL. Remove from URL list and set it.
+          wpt.description = wpt.urls.shift
+        end
+      else
+        wptflag = 0
+
+        wpt.address = read_string(io)
+
+        read_meaningless_chars io, 5 # not sure if they are in fact meaningless
+        wpt.description = read_string(io)
+
+        url_count = read_int(io)
+        url_count.times do
+          url = read_string(io)
+          wpt.add_url(url) if url
+        end
+      end
+
+      wpt.category = ((i = read_int16(io)) && i != 0)
+      wpt.temperature = read_double(io) if read_boolean(io)
+
+      if header.version <= 2
+        if wptflag != 0
+          read_meaningless_chars io, 1
+        end
+      end
+
+      wpt.set_creation_time read_int(io) if read_boolean(io)
 
       wpt
     end
@@ -132,14 +175,14 @@ module MapSource
 
         wpt = Waypoint.new(lat, lon)
 
-        if read_char(io) == 1
+        if read_boolean(io)
           alt = read_double(io)
           wpt.altitude = alt if alt < 1.0e24
         end
 
-        wpt.creation_time = read_int(io) if read_char(io) == 1
-        wpt.depth = read_double(io) if read_char(io) == 1
-        wpt.temperature = read_double(io) if read_char(io) == 1
+        wpt.creation_time = read_int(io) if read_boolean(io)
+        wpt.depth = read_double(io) if read_boolean(io)
+        wpt.temperature = read_double(io) if read_boolean(io)
 
         track.add_waypoint wpt
       end
@@ -177,6 +220,14 @@ module MapSource
       io.read(4).unpack('l').shift
     end
 
+    def read_int16(io)
+      io.read(2).unpack('s').shift
+    end
+
+    def read_meaningless_chars(io, number_of_chars)
+      io.read number_of_chars
+    end
+
     # Reads a Double from an IO object, unpacking it appropriately.
     #
     # io - an IO object.
@@ -194,6 +245,15 @@ module MapSource
     # Returns a single character.
     def read_char(io)
       io.read(1).unpack('c').shift
+    end
+
+    # Reads a boolean from an IO object.
+    #
+    # io - an IO object.
+    #
+    # Returns a single character.
+    def read_boolean(io)
+      read_char(io) == 1
     end
 
     # Reads a GDB's header to determine the version being parsed, its creator

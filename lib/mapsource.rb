@@ -30,6 +30,11 @@ require 'mapsource/defs'
 require 'mapsource/reader'
 
 module MapSource
+  # Public: Reads a GDB file and returns a Ruby-friendly representation.
+  #
+  # path - A String pointing to a GDB in the filesystem.
+  #
+  # Returns a MapSource::Reader.
   def self.read(path)
     MapSource::Reader.new open(path)
   end

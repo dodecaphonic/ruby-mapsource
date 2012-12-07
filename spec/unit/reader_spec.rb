@@ -94,6 +94,7 @@ describe MapSource::Reader do
       wpt.longitude.must_be_close_to -44.836323726922274
       wpt.notes.must_equal "15-DEZ-11 12:06:43PM"
       wpt.altitude.floor.must_be_close_to 1494
+      wpt.depth.must_be_nil
     end
 
     it "parses tracks" do

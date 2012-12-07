@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.version     = MapSource::VERSION
   s.authors     = ["Vitor Capela"]
   s.email       = ["dodecaphonic@gmail.com"]
-  s.homepage    = ""
+  s.homepage    = "http://github.com/dodecaphonic/ruby-mapsource"
   s.summary     = %q{A Ruby library for reading MapSource/BaseCamp-created GDB files}
   s.description = %q{A Ruby library for reading MapSource/BaseCamp-created GDB files}
 
@@ -18,6 +18,7 @@ Gem::Specification.new do |s|
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
 
-  s.add_development_dependency "minitest", "~> 2.10"
-  s.add_development_dependency "mocha", "~> 0.10"
+  s.add_development_dependency "minitest"
+  s.add_development_dependency "mocha"
+  s.add_development_dependency "rake"
 end

@@ -8,11 +8,21 @@ module MapSource
 
   # Public: A Waypoint.
   class Waypoint
-    attr_accessor :shortname, :latitude, :longitude, :altitude, :temperature, :depth, :notes, :creation_time, :proximity, :icon, :city, :state, :facility
+    attr_accessor :shortname, :latitude, :longitude, :altitude, :temperature, :depth, :notes, :creation_time, :proximity, :icon, :city, :state, :facility, :address, :description, :category
+    attr_reader :urls
 
     def initialize(latitude, longitude)
       @latitude = latitude
       @longitude = longitude
+      @urls = []
+    end
+
+    def add_url(url)
+      @urls << url
+    end
+
+    def set_creation_time(value)
+      puts value
     end
   end
 
