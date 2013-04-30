@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/dodecaphonic/ruby-mapsource.png?branch=master)](https://travis-ci.org/dodecaphonic/ruby-mapsource)
+
 ruby-mapsource is a library that allows ruby programs to read files created by Garmin's MapSource and BaseCamp.
 
 # Usage
