@@ -20,11 +20,7 @@
 # SOFTWARE.
 #++
 
-mapsource_path = File.dirname(__FILE__)
-$:.unshift(mapsource_path) if File.directory?(mapsource_path) && !$:.include?(mapsource_path)
-
 require 'stringio'
-
 require 'mapsource/structure'
 require 'mapsource/defs'
 require 'mapsource/reader'
